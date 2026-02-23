@@ -1,5 +1,7 @@
 // lia-client/src-tauri/src/main.rs
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod vision;
+mod audio;
 
 use warp::Filter;
 use futures_util::StreamExt; // Necesario para leer los mensajes del WebSocket
@@ -36,7 +38,9 @@ async fn main() {
         .map(|ws: warp::ws::Ws| {
             ws.on_upgrade(move |socket| handle_ws_client(socket))
         });
-
+    // Probamos los sentidos de Lia al arrancar
+    vision::probar_vision();
+    audio::probar_oido();
     // 2. Levantamos el servidor en un hilo secundario para no bloquear Tauri
     tokio::spawn(async move {
         println!("Servidor local de Lia escuchando en ws://127.0.0.1:3333/ws");
