@@ -2,6 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod audio;
 mod context;
+mod hasher;
+mod request;
+mod sentinel;
 mod vision;
 
 use context::{ContextUpdate, SharedContext};

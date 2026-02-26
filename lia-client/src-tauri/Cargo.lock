@@ -101,16 +101,20 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 name = "app"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "cpal",
  "futures-util",
  "log",
+ "regex",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-log",
  "tokio",
+ "uuid",
  "warp",
  "xcap",
 ]
