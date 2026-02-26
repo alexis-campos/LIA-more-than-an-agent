@@ -1,4 +1,4 @@
-# Lia: The Holistic AI Agent
+# Lia, more than an agent
 
 Lia is not a traditional chatbot; it is a **Proactive and Multimodal Programming Companion**. Designed to break the barrier between the browser and the development environment, Lia acts as a "Pair Programmer" that can see your screen, hear your voice, and read your code in real-time to offer deep contextual assistance.
 
