@@ -97,15 +97,22 @@ The first time will take several minutes while Rust compiles. Upon completion, y
 ```
 lia-monorepo/
 ├── lia-client/              # Desktop app (Rust/Tauri + React)
-│   └── src-tauri/src/
-│       ├── main.rs          # WebSocket server + orchestrator
-│       ├── context.rs       # Shared state (Arc<Mutex>) for VS Code context
-│       ├── sentinel.rs      # DLP: regex-based secret sanitization
-│       ├── hasher.rs        # SHA-256 for smart caching
-│       ├── request.rs       # Contract B builder (multimodal request)
-│       ├── vision.rs        # Screen capture (xcap)
-│       ├── audio.rs         # Microphone recording + WAV encoding (cpal/hound)
-│       └── playback.rs      # Audio playback for TTS (rodio)
+│   ├── src-tauri/src/
+│   │   ├── main.rs          # WebSocket server + Tauri event bridge
+│   │   ├── context.rs       # Shared state (Arc<Mutex>) for VS Code context
+│   │   ├── sentinel.rs      # DLP: regex-based secret sanitization
+│   │   ├── hasher.rs        # SHA-256 for smart caching
+│   │   ├── request.rs       # Contract B builder (multimodal request)
+│   │   ├── vision.rs        # Screen capture (xcap)
+│   │   ├── audio.rs         # Microphone recording + WAV encoding (cpal/hound)
+│   │   └── playback.rs      # Audio playback for TTS (rodio)
+│   └── src/
+│       ├── App.tsx          # Root HUD component (Tauri event listeners)
+│       ├── App.css          # Glassmorphism styles
+│       └── components/
+│           ├── StatusOrb.tsx    # Animated state indicator (Framer Motion)
+│           ├── StreamingText.tsx # Real-time Gemini response display
+│           └── ContextBar.tsx   # Current file/line/language bar
 ├── lia-vscode/              # VS Code extension (TypeScript)
 │   └── src/
 │       └── extension.ts     # Context extraction + debounce + reconnection
@@ -128,5 +135,5 @@ lia-monorepo/
 - [x] Phase 3: Sentinel (Privacy filter, Regex sanitization, SHA-256 hashing, Contract B packaging).
 - [x] Phase 4: The Brain (FastAPI backend with Vertex AI / Gemini 1.5 Pro streaming).
 - [x] Phase 5: The Voice (Real-time STT/TTS audio pipeline).
-- [ ] Phase 6: The HUD (Transparent floating UI with React + Framer Motion).
+- [x] Phase 6: The HUD (Transparent floating UI with React + Framer Motion).
 - [ ] Phase 7: Advanced Magic (Echo cancellation, Wake Word, Multi-monitor, Resilience).

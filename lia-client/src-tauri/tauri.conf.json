@@ -13,10 +13,14 @@
     "windows": [
       {
         "title": "Lia",
-        "width": 800,
-        "height": 600,
+        "width": 380,
+        "height": 420,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
       }
     ],
     "security": {

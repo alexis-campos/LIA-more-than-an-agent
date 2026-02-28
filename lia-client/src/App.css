@@ -1,38 +1,152 @@
-.App {
-  text-align: center;
+.hud-container {
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* Barra superior draggable */
+.hud-titlebar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  cursor: grab;
+  flex-shrink: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.hud-titlebar:active {
+  cursor: grabbing;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.hud-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.hud-close {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.hud-close:hover {
+  background: #ef4444;
+}
+
+/* Area principal */
+.hud-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 16px;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* Panel de texto streaming */
+.streaming-panel {
+  width: 100%;
+  flex: 1;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.streaming-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.streaming-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.streaming-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--color-accent-responding);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.streaming-placeholder {
+  color: var(--color-text-dim);
+  font-style: italic;
+  font-size: 12px;
+  text-align: center;
+  padding-top: 24px;
+}
+
+/* Barra de contexto inferior */
+.context-bar {
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius) var(--radius);
+  flex-shrink: 0;
 }
 
-.App-link {
-  color: #61dafb;
+.context-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent-idle);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.context-text {
+  font-size: 10px;
+  color: var(--color-text-dim);
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
