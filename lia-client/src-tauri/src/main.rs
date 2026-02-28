@@ -3,14 +3,17 @@
 mod audio;
 mod context;
 mod hasher;
+mod orchestrator;
 mod playback;
 mod request;
 mod sentinel;
 mod vision;
+mod wakeword;
 
 use context::{ContextUpdate, SharedContext};
 use futures_util::StreamExt;
 use serde::Serialize;
+use std::net::TcpListener;
 use tauri::{AppHandle, Emitter};
 use warp::Filter;
 
@@ -23,9 +26,37 @@ struct ContextInfo {
     cursor_line: u32,
 }
 
+/// Encuentra un puerto disponible. Intenta el preferido primero.
+fn find_available_port(preferred: u16) -> u16 {
+    // Intentar el puerto preferido
+    if TcpListener::bind(("127.0.0.1", preferred)).is_ok() {
+        return preferred;
+    }
+    // Pedir al OS un puerto libre
+    TcpListener::bind(("127.0.0.1", 0))
+        .and_then(|listener| listener.local_addr())
+        .map(|addr| addr.port())
+        .unwrap_or(preferred)
+}
+
+/// Escribe el puerto en ~/.lia/port para que la extension lo descubra.
+fn write_port_file(port: u16) {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let lia_dir = std::path::PathBuf::from(&home).join(".lia");
+    let _ = std::fs::create_dir_all(&lia_dir);
+    let port_file = lia_dir.join("port");
+    let _ = std::fs::write(&port_file, port.to_string());
+    println!("Puerto escrito en {:?}", port_file);
+}
+
+/// Elimina el archivo de puerto al cerrar.
+fn cleanup_port_file() {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let port_file = std::path::PathBuf::from(&home).join(".lia").join("port");
+    let _ = std::fs::remove_file(&port_file);
+}
+
 /// Maneja la conexion WebSocket de cada cliente (VS Code).
-/// Parsea los mensajes entrantes como ContextUpdate (Contrato A),
-/// actualiza la memoria compartida y emite eventos al frontend.
 async fn handle_ws_client(websocket: warp::ws::WebSocket, ctx: SharedContext, app: AppHandle) {
     println!("VS Code se ha conectado a Lia.");
 
@@ -44,7 +75,6 @@ async fn handle_ws_client(websocket: warp::ws::WebSocket, ctx: SharedContext, ap
                                 update.file_context.language
                             );
 
-                            // Emitir evento al frontend React
                             let _ = app.emit(
                                 "lia://context-update",
                                 ContextInfo {
@@ -54,7 +84,6 @@ async fn handle_ws_client(websocket: warp::ws::WebSocket, ctx: SharedContext, ap
                                 },
                             );
 
-                            // Guardar en memoria compartida
                             if let Ok(mut lock) = ctx.lock() {
                                 *lock = Some(update);
                             }
@@ -80,16 +109,25 @@ async fn main() {
     vision::probar_vision();
     audio::probar_oido();
 
-    // 1. Creamos el contexto compartido (Fase 2)
+    // Contexto compartido (Fase 2)
     let shared_ctx = context::create_shared_context();
 
-    // 4. Iniciamos Tauri con el servidor WebSocket integrado
+    // Dynamic port discovery (Fase 7)
+    let port = find_available_port(3333);
+    write_port_file(port);
+
+    // Cleanup al cerrar (Ctrl+C)
+    let _ = ctrlc::set_handler(move || {
+        cleanup_port_file();
+        std::process::exit(0);
+    });
+
+    // Iniciar Tauri con el servidor WebSocket integrado
     tauri::Builder::default()
         .setup(move |app| {
             let app_handle = app.handle().clone();
             let ctx = shared_ctx.clone();
 
-            // 2. Configuramos la ruta del WebSocket con Warp
             let ctx_filter = {
                 let ctx = ctx.clone();
                 warp::any().map(move || ctx.clone())
@@ -108,14 +146,19 @@ async fn main() {
                     ws.on_upgrade(move |socket| handle_ws_client(socket, ctx, app))
                 });
 
-            // 3. Levantamos el servidor en un hilo secundario
             tokio::spawn(async move {
-                println!("Servidor local de Lia escuchando en ws://127.0.0.1:3333/ws");
-                warp::serve(ws_route).run(([127, 0, 0, 1], 3333)).await;
+                println!(
+                    "Servidor local de Lia escuchando en ws://127.0.0.1:{}/ws",
+                    port
+                );
+                warp::serve(ws_route).run(([127, 0, 0, 1], port)).await;
             });
 
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    // Cleanup al salir normalmente
+    cleanup_port_file();
 }

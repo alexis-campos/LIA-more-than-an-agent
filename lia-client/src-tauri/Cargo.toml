@@ -35,3 +35,5 @@ base64 = "0.22"
 uuid = { version = "1", features = ["v4"] }
 hound = "3.5"
 rodio = "0.19"
+ctrlc = "3.4"
+image = "0.25"

@@ -98,14 +98,16 @@ The first time will take several minutes while Rust compiles. Upon completion, y
 lia-monorepo/
 ├── lia-client/              # Desktop app (Rust/Tauri + React)
 │   ├── src-tauri/src/
-│   │   ├── main.rs          # WebSocket server + Tauri event bridge
+│   │   ├── main.rs          # WebSocket server + Tauri event bridge + dynamic port
 │   │   ├── context.rs       # Shared state (Arc<Mutex>) for VS Code context
+│   │   ├── orchestrator.rs  # Global state machine (IDLE/LISTENING/THINKING/RESPONDING)
+│   │   ├── wakeword.rs      # Voice Activity Detection (RMS energy)
 │   │   ├── sentinel.rs      # DLP: regex-based secret sanitization
 │   │   ├── hasher.rs        # SHA-256 for smart caching
 │   │   ├── request.rs       # Contract B builder (multimodal request)
-│   │   ├── vision.rs        # Screen capture (xcap)
-│   │   ├── audio.rs         # Microphone recording + WAV encoding (cpal/hound)
-│   │   └── playback.rs      # Audio playback for TTS (rodio)
+│   │   ├── vision.rs        # Screen capture + multi-monitor (xcap)
+│   │   ├── audio.rs         # Mic recording + WAV + echo cancellation (cpal/hound)
+│   │   └── playback.rs      # Audio playback for TTS with echo flag (rodio)
 │   └── src/
 │       ├── App.tsx          # Root HUD component (Tauri event listeners)
 │       ├── App.css          # Glassmorphism styles
@@ -115,7 +117,7 @@ lia-monorepo/
 │           └── ContextBar.tsx   # Current file/line/language bar
 ├── lia-vscode/              # VS Code extension (TypeScript)
 │   └── src/
-│       └── extension.ts     # Context extraction + debounce + reconnection
+│       └── extension.ts     # Context extraction + debounce + exponential backoff + port discovery
 ├── lia-cloud/               # Cloud backend (Python/FastAPI)
 │   ├── main.py              # FastAPI + WebSocket /ws/lia
 │   ├── config.py            # Environment variables
@@ -136,4 +138,4 @@ lia-monorepo/
 - [x] Phase 4: The Brain (FastAPI backend with Vertex AI / Gemini 1.5 Pro streaming).
 - [x] Phase 5: The Voice (Real-time STT/TTS audio pipeline).
 - [x] Phase 6: The HUD (Transparent floating UI with React + Framer Motion).
-- [ ] Phase 7: Advanced Magic (Echo cancellation, Wake Word, Multi-monitor, Resilience).
+- [x] Phase 7: Advanced Magic (Echo cancellation, Wake Word, Multi-monitor, Resilience).
