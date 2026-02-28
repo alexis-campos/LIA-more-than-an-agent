@@ -6,9 +6,9 @@ Lia is not a traditional chatbot; it is a **Proactive and Multimodal Programming
 
 The system is divided into three fundamental pillars that communicate asynchronously:
 
-1. **`lia-client` (The Body - Rust/Tauri & React):** Heavy desktop application. Manages the floating interface (HUD), Lia's senses (screen capture with `xcap`, microphone with `cpal`), the privacy guard (Sentinel), and smart caching (SHA-256 hashing).
+1. **`lia-client` (The Body - Rust/Tauri & React):** Heavy desktop application. Manages the floating interface (HUD), Lia's senses (screen capture with `xcap`, microphone recording with `cpal`/`hound`), audio playback (`rodio`), the privacy guard (Sentinel), and smart caching (SHA-256 hashing).
 2. **`lia-vscode` (The Touch - TypeScript):** Visual Studio Code extension that extracts code context in real-time (±50 lines around the cursor) and sends it to the local client via WebSockets with debounce.
-3. **`lia-cloud` (The Brain - Python/FastAPI):** Cloud backend that receives multimodal requests from the Rust client, resolves a volatile LRU cache, and processes them through Gemini 1.5 Pro via Vertex AI with streaming responses.
+3. **`lia-cloud` (The Brain - Python/FastAPI):** Cloud backend that receives multimodal requests from the Rust client, transcribes speech (Google STT), resolves a volatile LRU cache, processes them through Gemini 1.5 Pro via Vertex AI with streaming responses, and synthesizes voice replies (Google TTS).
 
 ---
 
@@ -104,7 +104,8 @@ lia-monorepo/
 │       ├── hasher.rs        # SHA-256 for smart caching
 │       ├── request.rs       # Contract B builder (multimodal request)
 │       ├── vision.rs        # Screen capture (xcap)
-│       └── audio.rs         # Microphone input (cpal)
+│       ├── audio.rs         # Microphone recording + WAV encoding (cpal/hound)
+│       └── playback.rs      # Audio playback for TTS (rodio)
 ├── lia-vscode/              # VS Code extension (TypeScript)
 │   └── src/
 │       └── extension.ts     # Context extraction + debounce + reconnection
@@ -112,7 +113,9 @@ lia-monorepo/
 │   ├── main.py              # FastAPI + WebSocket /ws/lia
 │   ├── config.py            # Environment variables
 │   ├── cache.py             # Volatile LRU cache (RAM only, 15min TTL)
-│   └── inference.py         # Gemini 1.5 Pro via Vertex AI (streaming)
+│   ├── inference.py         # Gemini 1.5 Pro via Vertex AI (streaming)
+│   ├── stt.py               # Speech-to-Text (Google Cloud Speech)
+│   └── tts.py               # Text-to-Speech (Google Cloud TTS / WaveNet)
 └── README.md
 ```
 
@@ -124,6 +127,6 @@ lia-monorepo/
 - [x] Phase 2: The Touch (Dynamic context extraction in VS Code with debounce).
 - [x] Phase 3: Sentinel (Privacy filter, Regex sanitization, SHA-256 hashing, Contract B packaging).
 - [x] Phase 4: The Brain (FastAPI backend with Vertex AI / Gemini 1.5 Pro streaming).
-- [ ] Phase 5: The Voice (Real-time STT/TTS audio pipeline).
+- [x] Phase 5: The Voice (Real-time STT/TTS audio pipeline).
 - [ ] Phase 6: The HUD (Transparent floating UI with React + Framer Motion).
 - [ ] Phase 7: Advanced Magic (Echo cancellation, Wake Word, Multi-monitor, Resilience).

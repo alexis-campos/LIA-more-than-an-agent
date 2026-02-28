@@ -20,7 +20,9 @@ google-cloud-aiplatform==1.138.0
 google-cloud-bigquery==3.40.1
 google-cloud-core==2.5.0
 google-cloud-resource-manager==1.16.0
+google-cloud-speech==2.37.0
 google-cloud-storage==3.9.0
+google-cloud-texttospeech==2.34.0
 google-crc32c==1.8.0
 google-genai==1.64.0
 google-resumable-media==2.8.0

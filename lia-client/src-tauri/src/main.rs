@@ -3,6 +3,7 @@
 mod audio;
 mod context;
 mod hasher;
+mod playback;
 mod request;
 mod sentinel;
 mod vision;

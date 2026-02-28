@@ -13,6 +13,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from config import HOST, PORT, LIA_CLIENT_TOKEN
 from cache import LRUCache
 from inference import stream_response
+from stt import transcribe
+from tts import synthesize
 
 # Logging seguro: solo metadatos, nunca contenido de codigo
 logging.basicConfig(
@@ -92,14 +94,17 @@ async def websocket_endpoint(
             else:
                 image_bytes = cache.get(image_hash)
 
-            # 5. Audio (por ahora solo decodificamos, STT viene en Fase 5)
+            # 5. Audio: transcribir con STT si hay audio
             audio_data = payload.get("audio", {})
             audio_b64 = audio_data.get("data_b64")
-            audio_transcript = None  # Placeholder hasta Fase 5 (STT)
+            audio_transcript = None
 
             if audio_b64:
-                logger.info("Audio recibido (%d chars b64), STT pendiente Fase 5",
-                            len(audio_b64))
+                audio_bytes = base64.b64decode(audio_b64)
+                logger.info("Audio recibido (%d bytes), transcribiendo...", len(audio_bytes))
+                audio_transcript = await transcribe(audio_bytes)
+                if audio_transcript:
+                    logger.info("Transcripcion: '%s'", audio_transcript[:100])
 
             # 6. Llamar a Gemini y enviar streaming (Contrato C)
             try:
@@ -109,13 +114,23 @@ async def websocket_endpoint(
                     image_bytes=image_bytes,
                     audio_transcript=audio_transcript,
                 ):
-                    # Enviar chunk de tipo code_suggestion
+                    # Enviar chunk de texto (code_suggestion)
                     await websocket.send_json({
                         "request_id": request_id,
                         "stream_status": "in_progress",
                         "chunk_type": "code_suggestion",
                         "data": text_chunk,
                     })
+
+                    # Generar y enviar chunk de audio (TTS)
+                    tts_audio = await synthesize(text_chunk)
+                    if tts_audio:
+                        await websocket.send_json({
+                            "request_id": request_id,
+                            "stream_status": "in_progress",
+                            "chunk_type": "audio",
+                            "data": base64.b64encode(tts_audio).decode("utf-8"),
+                        })
 
                 # Mensaje de cierre
                 await websocket.send_json({
