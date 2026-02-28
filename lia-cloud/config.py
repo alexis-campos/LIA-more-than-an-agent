@@ -7,7 +7,7 @@ import os
 # Google Cloud / Vertex AI
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "lia-ai-488723")
 GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # Autenticacion: token que Rust envia en los headers para validar la conexion
 LIA_CLIENT_TOKEN = os.getenv("LIA_CLIENT_TOKEN", "lia-dev-token-2024")

@@ -29,9 +29,9 @@ async def transcribe(audio_bytes: bytes, sample_rate: int = 16000) -> str:
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=sample_rate,
-        language_code="es-419",  # Espanol latinoamericano
+        language_code="es-ES",  # Espanol (compatible con todos los modelos)
         alternative_language_codes=["en-US"],  # Fallback a ingles
-        model="latest_long",
+        model="default",
         enable_automatic_punctuation=True,
     )
 

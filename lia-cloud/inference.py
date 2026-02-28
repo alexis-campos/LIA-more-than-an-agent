@@ -107,11 +107,12 @@ async def stream_response(
     logger.info("Enviando prompt multimodal a Gemini (%d partes)", len(parts))
 
     try:
-        async for chunk in client.aio.models.generate_content_stream(
+        response = await client.aio.models.generate_content_stream(
             model=GEMINI_MODEL,
             contents=[Content(role="user", parts=parts)],
             config=config,
-        ):
+        )
+        async for chunk in response:
             if chunk.text:
                 yield chunk.text
     except Exception as e:
