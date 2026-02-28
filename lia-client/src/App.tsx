@@ -3,8 +3,9 @@
 // Orquesta el estado de la maquina, escucha eventos de Tauri,
 // y renderiza el orbe, el texto streaming, y la barra de contexto.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import StatusOrb, { type LiaState } from './components/StatusOrb';
 import StreamingText from './components/StreamingText';
@@ -20,6 +21,7 @@ interface ContextInfo {
 function App() {
   const [state, setState] = useState<LiaState>('IDLE');
   const [streamText, setStreamText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [context, setContext] = useState<ContextInfo>({
     fileName: '',
     language: '',
@@ -27,22 +29,25 @@ function App() {
   });
 
   useEffect(() => {
-    // Escuchar cambios de estado desde Rust
     const unlistenState = listen<string>('lia://state-change', (event) => {
-      setState(event.payload as LiaState);
+      const newState = event.payload as LiaState;
+      setState(newState);
+      setIsProcessing(newState !== 'IDLE');
     });
 
-    // Escuchar chunks de texto streaming desde Gemini
     const unlistenChunk = listen<string>('lia://stream-chunk', (event) => {
       setStreamText((prev) => prev + event.payload);
     });
 
-    // Escuchar fin del stream
-    const unlistenEnd = listen('lia://stream-end', () => {
-      setState('IDLE');
+    const unlistenClear = listen('lia://stream-clear', () => {
+      setStreamText('');
     });
 
-    // Escuchar actualizaciones de contexto (archivo/linea)
+    const unlistenEnd = listen('lia://stream-end', () => {
+      setState('IDLE');
+      setIsProcessing(false);
+    });
+
     const unlistenContext = listen<ContextInfo>('lia://context-update', (event) => {
       setContext(event.payload);
     });
@@ -50,12 +55,24 @@ function App() {
     return () => {
       unlistenState.then((fn) => fn());
       unlistenChunk.then((fn) => fn());
+      unlistenClear.then((fn) => fn());
       unlistenEnd.then((fn) => fn());
       unlistenContext.then((fn) => fn());
     };
   }, []);
 
-  // Cerrar la ventana
+  // Disparar inferencia via Tauri command
+  const handleAskLia = useCallback(async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      await invoke('ask_lia');
+    } catch (e) {
+      console.error('Error invocando ask_lia:', e);
+      setIsProcessing(false);
+    }
+  }, [isProcessing]);
+
   const handleClose = () => {
     getCurrentWindow().close();
   };
@@ -72,6 +89,15 @@ function App() {
       <div className="hud-main">
         <StatusOrb state={state} />
         <StreamingText text={streamText} state={state} />
+
+        {/* Boton de accion */}
+        <button
+          className={`ask-button ${isProcessing ? 'ask-button--disabled' : ''}`}
+          onClick={handleAskLia}
+          disabled={isProcessing}
+        >
+          {isProcessing ? 'Procesando...' : 'Preguntar a Lia'}
+        </button>
       </div>
 
       {/* Barra de contexto */}

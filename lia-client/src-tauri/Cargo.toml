@@ -37,3 +37,5 @@ hound = "3.5"
 rodio = "0.19"
 ctrlc = "3.4"
 image = "0.25"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+url = "2"

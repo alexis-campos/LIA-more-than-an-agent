@@ -108,22 +108,26 @@ async def websocket_endpoint(
 
             # 6. Llamar a Gemini y enviar streaming (Contrato C)
             try:
+                full_response = ""
+
                 async for text_chunk in stream_response(
                     code=code_content,
                     language=code_language,
                     image_bytes=image_bytes,
                     audio_transcript=audio_transcript,
                 ):
-                    # Enviar chunk de texto (code_suggestion)
+                    # Enviar chunk de texto en tiempo real
                     await websocket.send_json({
                         "request_id": request_id,
                         "stream_status": "in_progress",
                         "chunk_type": "code_suggestion",
                         "data": text_chunk,
                     })
+                    full_response += text_chunk
 
-                    # Generar y enviar chunk de audio (TTS)
-                    tts_audio = await synthesize(text_chunk)
+                # TTS: sintetizar la respuesta completa al final (mucho mas rapido)
+                if full_response:
+                    tts_audio = await synthesize(full_response[:500])
                     if tts_audio:
                         await websocket.send_json({
                             "request_id": request_id,
@@ -139,7 +143,7 @@ async def websocket_endpoint(
                     "chunk_type": "system",
                     "data": None,
                 })
-                logger.info("Peticion %s completada", request_id)
+                logger.info("Peticion %s completada (%d chars)", request_id, len(full_response))
 
             except Exception as e:
                 logger.error("Error procesando peticion %s: %s", request_id, str(e))
