@@ -6,24 +6,27 @@ Lia is not a traditional chatbot; it is a **Proactive and Multimodal Programming
 
 The system is divided into three fundamental pillars that communicate asynchronously:
 
-1. **`lia-client` (The Body - Rust/Tauri & React):** Heavy desktop application. Manages the floating interface (HUD) and Lia's senses: screen capture (`xcap`) and audio (`cpal`).
-2. **`lia-vscode` (The Touch - TypeScript):** Visual Studio Code extension that extracts code context in real-time and sends it to the local client via WebSockets.
-3. **`lia-cloud` (The Brain - Python/FastAPI):** *(In development)* Cloud backend that processes the multimodal request using Gemini.
+1. **`lia-client` (The Body - Rust/Tauri & React):** Heavy desktop application. Manages the floating interface (HUD), Lia's senses (screen capture with `xcap`, microphone with `cpal`), the privacy guard (Sentinel), and smart caching (SHA-256 hashing).
+2. **`lia-vscode` (The Touch - TypeScript):** Visual Studio Code extension that extracts code context in real-time (±50 lines around the cursor) and sends it to the local client via WebSockets with debounce.
+3. **`lia-cloud` (The Brain - Python/FastAPI):** Cloud backend that receives multimodal requests from the Rust client, resolves a volatile LRU cache, and processes them through Gemini 1.5 Pro via Vertex AI with streaming responses.
 
 ---
 
 ## Prerequisites
 
-To run Lia's local infrastructure, you need to have installed:
+To run Lia's full infrastructure, you need:
 
 * [Node.js](https://nodejs.org/) (v18 or higher)
 * [Rust and Cargo](https://rustup.rs/)
+* [Python 3.12+](https://www.python.org/)
+* [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (with Vertex AI API enabled)
 * **Operating System Dependencies (Linux/Ubuntu):**
   Lia interacts directly with video and audio hardware. You must install the underlying C libraries:
   ```bash
   sudo apt update
   sudo apt install pkg-config libasound2-dev libx11-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
-(Note: If you use Windows or macOS, the Rust compilation will handle native dependencies automatically through system APIs).
+  ```
+  (Note: If you use Windows or macOS, the Rust compilation will handle native dependencies automatically through system APIs).
 
 ---
 
@@ -33,36 +36,94 @@ To run Lia's local infrastructure, you need to have installed:
     ```bash
     git clone https://github.com/alexis-campos/LIA-more-than-an-agent.git
     cd lia-monorepo
+    ```
 2. Install client (Desktop) dependencies:
     ```bash
     cd lia-client
     npm install
-    # Install the Tauri CLI locally
     npm install --save-dev @tauri-apps/cli
+    ```
 3. Install Extension (VS Code) dependencies:
     ```bash
     cd ../lia-vscode
     npm install
-
-## How to run the proyect (Development environment)
-To make the system work, you must start both parts (The Body and The Touch) simultaneously.
-1. Start the Local Brain (Tauri/Rust):
-Open a terminal, navigate to the client folder, and run the engine:
+    ```
+4. Install Cloud (Python) dependencies:
     ```bash
-    cd lia-client
-    npm run tauri dev
-The first time will take several minutes while Rust compiles the audio and video libraries. Upon completion, you will see in the console that the WebSocket server is listening on port 3333.
+    cd ../lia-cloud
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+5. Configure Google Cloud credentials:
+    ```bash
+    gcloud auth login
+    gcloud config set project YOUR_PROJECT_ID
+    gcloud services enable aiplatform.googleapis.com
+    gcloud auth application-default login
+    ```
 
-2. Connect the Editor (VS Code)
-Open a new VS Code window and load only the extension folder:
-    1. In VS Code: File -> Open Folder -> Select lia-vscode.
-    2. Press the F5 key to start debugging.
-    3. A secondary VS Code window ("Extension Development Host") will open.
-    4. Check your Tauri terminal: you should see the confirmation message that the extension successfully connected to the WebSocket bridge.
+---
+
+## How to Run (Development)
+
+To make the full system work, you must start all three parts simultaneously.
+
+### 1. Start the Cloud Brain (Python/FastAPI)
+```bash
+cd lia-cloud
+source venv/bin/activate
+python main.py
+```
+The server will start on `http://0.0.0.0:8000`. Verify with `curl http://127.0.0.1:8000/health`.
+
+### 2. Start the Local Body (Tauri/Rust)
+```bash
+cd lia-client
+npm run tauri dev
+```
+The first time will take several minutes while Rust compiles. Upon completion, you will see in the console that the WebSocket server is listening on `ws://127.0.0.1:3333/ws`.
+
+### 3. Connect the Editor (VS Code Extension)
+1. Open a new VS Code window: **File -> Open Folder -> Select `lia-vscode`**.
+2. Press **F5** to start debugging.
+3. A secondary VS Code window ("Extension Development Host") will open.
+4. The extension will automatically connect to the Rust client and begin sending real-time context updates (file name, cursor line, ±50 lines of code).
+
+---
+
+## Project Structure
+
+```
+lia-monorepo/
+├── lia-client/              # Desktop app (Rust/Tauri + React)
+│   └── src-tauri/src/
+│       ├── main.rs          # WebSocket server + orchestrator
+│       ├── context.rs       # Shared state (Arc<Mutex>) for VS Code context
+│       ├── sentinel.rs      # DLP: regex-based secret sanitization
+│       ├── hasher.rs        # SHA-256 for smart caching
+│       ├── request.rs       # Contract B builder (multimodal request)
+│       ├── vision.rs        # Screen capture (xcap)
+│       └── audio.rs         # Microphone input (cpal)
+├── lia-vscode/              # VS Code extension (TypeScript)
+│   └── src/
+│       └── extension.ts     # Context extraction + debounce + reconnection
+├── lia-cloud/               # Cloud backend (Python/FastAPI)
+│   ├── main.py              # FastAPI + WebSocket /ws/lia
+│   ├── config.py            # Environment variables
+│   ├── cache.py             # Volatile LRU cache (RAM only, 15min TTL)
+│   └── inference.py         # Gemini 1.5 Pro via Vertex AI (streaming)
+└── README.md
+```
+
+---
 
 ## Current Roadmap
 - [x] Phase 0: Monorepo setup and local WebSocket bridge.
 - [x] Phase 1: The Senses (Screen capture with xcap and microphone with cpal).
-- [ ] Phase 2: The Touch (Dynamic context extraction in VS Code).
-- [ ] Phase 3: Sentinel (Privacy filter and Regex sanitization).
-- [ ] Phase 4: The Brain (FastAPI and Vertex AI).
+- [x] Phase 2: The Touch (Dynamic context extraction in VS Code with debounce).
+- [x] Phase 3: Sentinel (Privacy filter, Regex sanitization, SHA-256 hashing, Contract B packaging).
+- [x] Phase 4: The Brain (FastAPI backend with Vertex AI / Gemini 1.5 Pro streaming).
+- [ ] Phase 5: The Voice (Real-time STT/TTS audio pipeline).
+- [ ] Phase 6: The HUD (Transparent floating UI with React + Framer Motion).
+- [ ] Phase 7: Advanced Magic (Echo cancellation, Wake Word, Multi-monitor, Resilience).
