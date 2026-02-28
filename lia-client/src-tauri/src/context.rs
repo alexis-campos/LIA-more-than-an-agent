@@ -19,6 +19,7 @@ pub struct FileContext {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ContextUpdate {
     pub event_type: String,
+    #[allow(dead_code)]
     pub timestamp: u64,
     pub workspace_name: String,
     pub file_context: FileContext,

@@ -1,6 +1,7 @@
 // lia-client/src-tauri/src/wakeword.rs
 // Deteccion de actividad vocal (VAD) por energia RMS.
 // Activa la grabacion cuando detecta voz y la detiene tras silencio prolongado.
+// Infraestructura para activacion hands-free (actualmente se usa el boton del HUD).
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
